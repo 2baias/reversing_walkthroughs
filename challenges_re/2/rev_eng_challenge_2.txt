@@ -1,4 +1,8 @@
-byte, nibble, crumb, bit
+Did you know?
+
+8 bits = byte,
+4 bits = 1 hex = nibble,
+2 bits = half a hex = crumb.
 
 <f>:
    0:          mov    eax,DWORD PTR [esp+0x4] ; eax = [b1,b2,b3,b4]
@@ -40,24 +44,12 @@ byte, nibble, crumb, bit
   41:          or     eax,edx                 ; eax = [b4_01234567 b3_01234567 b2_01234567 b1_01234567]
   43:          ret
 
-let's cf to the input [b1_76543210 b2_76543210 b3_76543210 b4_76543210]
+Let's compare to the input [b1_76543210 b2_76543210 b3_76543210 b4_76543210].
 
-ok, so the program just reverses the input as a bit string
+Ok, so the program just reverses the input as a bit string. 
 
-; old solution, sadly broken
-; eax = [ 0    0    b4_1 b4_0 0    0    b4_5 b4_3 0    0    b3_1 b3_0 0    0    b3_5 b3_3 0    0    b2_1 b2_0 0    0    b2_5 b2_3 0    0    b1_1 b1_0 0    0    b1_5 b1_3]
-; edx = [ b4_3 b4_2 0    0    b4_7 b4_6 0    0    b3_3 b3_2 0    0    b3_7 b3_6 0    0    b2_3 b2_2 0    0    b2_7 b2_6 0    0    b1_3 b1_2 0    0    b1_7 b1_6 0    0   ]
-                                                                                                                                                                          
-; edx = [ 0    0    b4_3 b4_2 0    0    b4_7 b4_6 0    0    b3_3 b3_2 0    0    b3_7 b3_6 0    0    b2_3 b2_2 0    0    b2_7 b2_6 0    0    b1_3 b1_2 0    0    b1_7 b1_6]
-; eax = [ b4_1 b4_0 0    0    b4_5 b4_3 0    0    b3_1 b3_0 0    0    b3_5 b3_3 0    0    b2_1 b2_0 0    0    b2_5 b2_3 0    0    b1_1 b1_0 0    0    b1_5 b1_3 0    0   ]
-                                                                                                                                                                          
-; eax = [ b4_1 b4_0 b4_3 b4_2 b4_5 b4_3 b4_7 b4_6 b3_1 b3_0 b3_3 b3_2 b3_5 b3_3 b3_7 b3_6 b2_1 b2_0 b2_3 b2_2 b2_5 b2_3 b2_7 b2_6 b1_1 b1_0 b1_3 b1_2 b1_5 b1_3 b1_7 b1_6]
-; edx = [ b4_1 b4_0 b4_3 b4_2 b4_5 b4_3 b4_7 b4_6 b3_1 b3_0 b3_3 b3_2 b3_5 b3_3 b3_7 b3_6 b2_1 b2_0 b2_3 b2_2 b2_5 b2_3 b2_7 b2_6 b1_1 b1_0 b1_3 b1_2 b1_5 b1_3 b1_7 b1_6]
-                                                                                                                                                                          
-; eax = [ 0    b4_0 0    b4_2 0    b4_3 0    b4_6 0    b3_0 0    b3_2 0    b3_3 0    b3_6 0    b2_0 0    b2_2 0    b2_3 0    b2_6 0    b1_0 0    b1_2 0    b1_3 0    b1_6]
-; edx = [ b4_1 0    b4_3 0    b4_5 0    b4_7 0    b3_1 0    b3_3 0    b3_5 0    b3_7 0    b2_1 0    b2_3 0    b2_5 0    b2_7 0    b1_1 0    b1_3 0    b1_5 0    b1_7 0   ]
-                                                                                                                                                                          
-; eax = [ b4_0 0    b4_2 0    b4_3 0    b4_6 0    b3_0 0    b3_2 0    b3_3 0    b3_6 0    b2_0 0    b2_2 0    b2_3 0    b2_6 0    b1_0 0    b1_2 0    b1_3 0    b1_6 0   ]
-; edx = [ 0    b4_1 0    b4_3 0    b4_5 0    b4_7 0    b3_1 0    b3_3 0    b3_5 0    b3_7 0    b2_1 0    b2_3 0    b2_5 0    b2_7 0    b1_1 0    b1_3 0    b1_5 0    b1_7]
-                                                                                                                                                                          
-; eax = [ b4_0 b4_1 b4_2 b4_3 b4_3 b4_5 b4_6 b4_7 b3_0 b3_1 b3_2 b3_3 b3_3 b3_5 b3_6 b3_7 b2_2 b2_1 b2_2 b2_3 b2_3 b2_5 b2_6 b2_7 b1_0 b1_1 b1_2 b1_3 b1_3 b1_5 b1_6 b1_7]
+Here's a corresponding implementation in Python.
+
+def bitreverser(num):
+  return int(format(num,'032b')[::-1],2)
+
