@@ -1,0 +1,64 @@
+; Since we use rax, I'm thinking this is probably 64 bit code
+; Linux: f(rdi, rsi, rdx, rcx, r8, r9) -- then stack in rev. order
+; Windows f(rcx, rdx, r8, r9) -- then stack in rev. order
+
+; We only see edi, so probably we only use a single argument to f
+; say f(ix)
+; i = [i31, i30, i29, i28, i27, i26, i25, i24, i23, i22, i21, i20, i19, i18, i17, i16, i15, i14, i13, i12, i11, i10, i9, i8, i7, i6, i5, i4, i3, i2, i1, i0]
+f:
+	mov	edx, edi ; edx = ix
+	shr	edx      ; edx = [0  , i31, i30, i29, i28, i27, i26, i25, i24, i23, i22, i21, i20, i19, i18, i17, i16, i15, i14, i13, i12, i11, i10, i9, i8, i7, i6, i5, i4, i3, i2, i1]
+	or	edx, edi ; edx =
+               ;       [0  , i31, i30, i29, i28, i27, i26, i25, i24, i23, i22, i21, i20, i19, i18, i17, i16, i15, i14, i13, i12, i11, i10, i9, i8, i7, i6, i5, i4, i3, i2, i1]
+               ; or    [i31, i30, i29, i28, i27, i26, i25, i24, i23, i22, i21, i20, i19, i18, i17, i16, i15, i14, i13, i12, i11, i10, i9 , i8, i7, i6, i5, i4, i3, i2, i1, i0]
+               ;     = [i31, i31 | i30, i30 | i29, i29 | i28, ..., i2 | i1, i1 | i0]
+
+	mov	eax, edx ; eax = [i31, i31 | i30, i30 | i29      , i29 | i28            , i28 | i27            , i27 | i26            , ..., i2 | i1          , i1 | i0]
+	shr	eax, 2   ; eax = [0  , 0        ,       i31      , i30 | i31            , i30 | i29            , i29 | i28            , ..., i4 | i3          , i3 | i2]
+  or	eax, edx ; eax = [i31, i31 | i30, i31 | i30 | i29, i31 | i30 | i29 | i28, i30 | i29 | i28 | i27, i29 | i28 | i27 | i26, ..., i4 | i3 | i2 | i1, i3 | i2 | i1 | i0]
+
+	mov	edx, eax ; edx = [i31, i31 | i30, i31 | i30 | i29, i31 | i30 | i29 | i28, i30 | i29 | i28 | i27, ..., i3 | i2 | i1 | i0]
+
+               ; don't get confused!
+
+	shr	edx, 4   ; edx = [0, 0, 0, 0, i31, i31 | i30, i31 | i30 | i29, i31 | i30 | i29 | i28, ..., i8 | i7 | i6 | i5, i7 | i6 | i5 | i4]
+	or	edx, eax ; edx = [i31, i31 | i30, i31 | i30 | i29, i31 | i30 | i29 | i28,  i31 | i30 | i29 | i28 | i27, i31 | i30 | i29 | i28 | i27 | i26, ..., i7 | i6 | i5 | i4 | i3 | i2 | i1 | i0]
+	mov	eax, edx ; eax = ibid.
+
+	shr	eax, 8
+	or	eax, edx ; 16 long
+	mov	edx, eax ; eax = rev[i0 | i1| ... | i15, i1 | i2 | ... | i15, ..., i16  | i17 | ... | i31, i17 | i18 | ... | i31, ..., i30 | i31, i31]
+
+	shr	edx, 16  ; 32 long
+	or	edx, eax ; edx = rev[i0 | i1 | ... | i31, i1 | i2 | ... | i31, i2 | i3 | ... | i31, ..., i29 | i30 | i31, i30 | i31, i31]
+               ;
+               ; edx can attain very few values, [1, 1, ..., 1] = 2^32 - 1
+               ;                                 [0, 1, ..., 1] = 2^31 - 1
+               ;                                 ...
+               ;                                 [0, 0, ..., 1] = 2^1  - 1
+               ;                                 [0, 0, ..., 0] = 2^0  - 1
+               ;
+               ; dep on place of highest bit in `i`
+               ; edx = 2^(highest bit + 1) - 1
+
+
+  ; i31.31 i31.30 i31.29 i31.28 i31.27 i31.26 i31.25 i31.24 i31.23 i31.22 i31.21 i31.20 i31.19 i31.18 i31.17 i31.16 i31.15 i31.14 i31.13 i31.12 i31.11 i31.10 i31.9 i31.8 i31.7 i31.6 i31.5 i31.4 i31.3 i31.2 i31.1 i31.0
+  ;      0      0      0      0      0      1      0      0      1      0      1      1      1      0      1      0      1      1      0      1      1     x1    x1    x1    x0    x0    x0    x0    x1    x1    x0    x1
+  ; ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  ; i31.31 i31.30 i31.29 i31.28 i31.27 i31.26 i31.25 i31.24 i31.23 i31.22 i31.21 i31.20 i31.19 i31.18 i31.17 i31.16 i31.15 i31.14 i31.13 i31.12 i31.11 i31.10 i31.9 i31.8 i31.7 i31.6 i31.5 i31.4 i31.3 i31.2 i31.1 i31.0
+  ;      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0     0     0     0     0     0     0     0     0     0     
+  ; i31.29 i31.28 i31.27 i31.26 i31.25 i31.24 i31.23 i31.22 i31.21 i31.20 i31.19 i31.18 i31.17 i31.16 i31.15 i31.14 i31.13 i31.12 i31.11 i31.10  i31.9  i31.8 i31.7 i31.6 i31.5 i31.4 i31.3 i31.2 i31.1 i31.0     
+  ; i31.28 i31.27 i31.26 i31.25 i31.24 i31.23 i31.22 i31.21 i31.20 i31.19 i31.18 i31.17 i31.16 i31.15 i31.14 i31.13 i31.12 i31.11 i31.10  i31.9  i31.8  i31.7 i31.6 i31.5 i31.4 i31.3 i31.2 i31.1 i31.0   
+  ;      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0     0     0     0     0     0     0     
+  ;      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0     0     0     0     0     0     
+  ;      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0     0     0     0     0     
+  ;      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0      0     0     0     0     
+  ; i31.23 i31.22 i31.21 i31.20 i31.19 i31.18 i31.17 i31.16 i31.15 i31.14 i31.13 i31.12 i31.11 i31.10  i31.9  i31.8  i31.7  i31.6  i31.5  i31.4  i31.3  i31.2 i31.1 i31.0     
+  ; i31.22 i31.21 i31.20 i31.19 i31.18 i31.17 i31.16 i31.15 i31.14 i31.13 i31.12 i31.11 i31.10  i31.9  i31.8  i31.7  i31.6  i31.5  i31.4  i31.3  i31.2  i31.1 i31.0     
+  ; i31.21 i31.20 i31.19 i31.18 i31.17 i31.16 i31.15 i31.14 i31.13 i31.12 i31.11 i31.10  i31.9  i31.8  i31.7  i31.6  i31.5  i31.4  i31.3  i31.2  i31.1  i31.0     
+  ;
+	imul	eax, edx, 79355661 ; 0x4badf0d (a mask?) ; eax is overwritten so doesn't matter
+	shr	eax, 26
+	mov	eax, DWORD PTR v[0+rax*4] ; since we use rax, I assume this can be regarded as 64 bit code
+  ;                             ; N. B. something I noticed much later, v[ ... ] is using byte indexing, so v[0+4*rax] is really v[rax], damn
+  ret
