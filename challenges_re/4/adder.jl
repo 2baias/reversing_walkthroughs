@@ -100,6 +100,9 @@ g = [b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15]
 di1 = deepcopy(g);
 dx1 = shr(di1);
 dx2 = and(dx1,_5555);
+
+#di1 - dx2
+
 di2 = sub(di1,dx2);
 di3 = mapreduce(di2,I);
 ax1 = deepcopy(di3);
